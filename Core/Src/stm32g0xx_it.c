@@ -22,6 +22,7 @@
 #include "stm32g0xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <lorae32_stm32.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,9 +56,11 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern UART_HandleTypeDef huart3;
+extern TIM_HandleTypeDef htim14;
 
 /* USER CODE BEGIN EV */
-
+extern UART_HandleTypeDef huart3;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -93,52 +96,47 @@ void HardFault_Handler(void)
   }
 }
 
-/**
-  * @brief This function handles System service call via SWI instruction.
-  */
-void SVC_Handler(void)
-{
-  /* USER CODE BEGIN SVC_IRQn 0 */
-
-  /* USER CODE END SVC_IRQn 0 */
-  /* USER CODE BEGIN SVC_IRQn 1 */
-
-  /* USER CODE END SVC_IRQn 1 */
-}
-
-/**
-  * @brief This function handles Pendable request for system service.
-  */
-void PendSV_Handler(void)
-{
-  /* USER CODE BEGIN PendSV_IRQn 0 */
-
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
-
-  /* USER CODE END PendSV_IRQn 1 */
-}
-
-/**
-  * @brief This function handles System tick timer.
-  */
-void SysTick_Handler(void)
-{
-  /* USER CODE BEGIN SysTick_IRQn 0 */
-
-  /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
-
-  /* USER CODE END SysTick_IRQn 1 */
-}
-
 /******************************************************************************/
 /* STM32G0xx Peripheral Interrupt Handlers                                    */
 /* Add here the Interrupt Handlers for the used peripherals.                  */
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32g0xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles TIM14 global interrupt.
+  */
+void TIM14_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM14_IRQn 0 */
+
+  /* USER CODE END TIM14_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim14);
+  /* USER CODE BEGIN TIM14_IRQn 1 */
+
+  /* USER CODE END TIM14_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART3 and USART4 interrupts.
+  */
+void USART3_4_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART3_4_IRQn 0 */
+	uint32_t isrflags   = READ_REG(huart3.Instance->ISR);
+	uint32_t cr1bits     = READ_REG(huart3.Instance->CR1);
+
+	//RX interrupt
+	if((isrflags & USART_ISR_RXNE_RXFNE)!=RESET && (cr1bits & USART_CR1_RXNEIE_RXFNEIE)!=RESET)
+	{
+		//Send the byte to the Queue maintained by LoRa system
+		LoRaE32PushByte(USART3->RDR);//this also clears the interrupt flag of usart.
+	}
+  /* USER CODE END USART3_4_IRQn 0 */
+  /* USER CODE BEGIN USART3_4_IRQn 1 */
+
+  /* USER CODE END USART3_4_IRQn 1 */
+}
 
 /* USER CODE BEGIN 1 */
 

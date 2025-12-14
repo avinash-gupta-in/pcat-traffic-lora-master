@@ -57,6 +57,7 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define LORA_USART huart3
 #define FLASH_CS_Pin GPIO_PIN_0
 #define FLASH_CS_GPIO_Port GPIOA
 #define LCD_BL_Pin GPIO_PIN_4
@@ -67,8 +68,14 @@ void Error_Handler(void);
 #define LCD_A0_GPIO_Port GPIOA
 #define LCD_CS_Pin GPIO_PIN_4
 #define LCD_CS_GPIO_Port GPIOC
+#define LORA_M0_Pin GPIO_PIN_5
+#define LORA_M0_GPIO_Port GPIOC
+#define LORA_M1_Pin GPIO_PIN_0
+#define LORA_M1_GPIO_Port GPIOB
 #define VBAT_ADC_Pin GPIO_PIN_1
 #define VBAT_ADC_GPIO_Port GPIOB
+#define LORA_AUX_Pin GPIO_PIN_12
+#define LORA_AUX_GPIO_Port GPIOB
 #define RELAY_1_Pin GPIO_PIN_13
 #define RELAY_1_GPIO_Port GPIOB
 #define RELAY_2_Pin GPIO_PIN_14
