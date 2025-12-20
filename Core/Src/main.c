@@ -81,6 +81,7 @@ const osThreadAttr_t GLCDTask_attributes = {
 /* USER CODE BEGIN PV */
 //disabled slaves are not polled to save time
 bool slave_enabled[SLAVE_COUNT]={false,true,false,false,false,false,false,false};
+uint16_t previous_speed[16];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -575,8 +576,42 @@ void StartDefaultTask(void *argument)
 		{
 			if(slave_enabled[i])
 			{
+				previous_speed[i*2]=speed[i*2];
+				previous_speed[i*2+1]=speed[i*2+1];
+
 				bool conn_state=PollSlave(i, &speed[i*2],&speed[(i*2)+1]);
 				UISetRadarState(i, conn_state);
+
+				//compare previous and new speeds
+				//in sensors
+				if(previous_speed[i*2]==0 && speed[i*2]!=0)
+				{
+					//New entry detected
+					vehicle_count++;
+
+					light_state=STOP;
+
+					HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_SET);
+					HAL_GPIO_WritePin(RELAY_2_GPIO_Port, RELAY_2_Pin, GPIO_PIN_SET);
+				}
+				//out sensors
+				if(previous_speed[i*2+1]==0 && speed[i*2+1]!=0)
+				{
+					//New entry detected
+					if(vehicle_count>0)
+					{
+						vehicle_count--;
+
+						if(vehicle_count==0)
+						{
+							light_state=GO;
+
+							HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin, GPIO_PIN_RESET);
+							HAL_GPIO_WritePin(RELAY_2_GPIO_Port, RELAY_2_Pin, GPIO_PIN_RESET);
+						}
+					}
+
+				}
 			}
 			else
 			{

@@ -19,12 +19,7 @@
 #define WIDGET_WIDTH 60
 #define WIDGET_HEIGHT 43
 #define TIMEOUT_PERIOD 160 //in unit of 250ms
-#define SENSOR_TIMEOUT 6000 //IF PACKET IS NOT RECEIVED FROM RADAR FOR MORE THAN THIS PERIOD, ERR WILL BE SHOWN
-//Light states
-#define GO 		1
-#define STOP 	0
 
-uint16_t previous_speed[16];
 volatile uint16_t speed[16];
 volatile uint8_t dir[8];
 volatile uint32_t time_stamp[8];
@@ -33,7 +28,7 @@ volatile bool slave_conn_status[SLAVE_COUNT];
 extern bool slave_enabled[SLAVE_COUNT];
 
 volatile int16_t vehicle_count=0;
-uint16_t light_state=GO;
+volatile uint16_t light_state=GO;
 
 int32_t timeout_counter;
 
