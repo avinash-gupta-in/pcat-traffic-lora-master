@@ -31,15 +31,16 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
+#include <master_config.h>
 #include "gfx.h"
 #include "font.h"
-#include "5x7_single.h"
 #include "fnt_arial12.h"
-#include "5x7_single.h"
-#include "Arial34B.h"
-#include "Arial48B.h"
 #include <lorae32_stm32.h>
 #include "myconsole_glcd.h"
+#include "./Tasks/glcd_task.h"
+#include "Tasks/ui.h"
+#include <ctype.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,13 +50,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define WIDGET_WIDTH 60
-#define WIDGET_HEIGHT 43
-#define TIMEOUT_PERIOD 160 //in unit of 250ms
-#define SENSOR_TIMEOUT 6000 //IF PACKET IS NOT RECEIVED FROM RADAR FOR MORE THAN THIS PERIOD, ERR WILL BE SHOWN
-//Light states
-#define GO 		1
-#define STOP 	0
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -84,15 +79,8 @@ const osThreadAttr_t GLCDTask_attributes = {
   .stack_size = 256 * 4
 };
 /* USER CODE BEGIN PV */
-uint16_t previous_speed[8];
-volatile uint16_t speed[8];
-volatile uint8_t dir[8];
-volatile uint32_t time_stamp[8];
-
-volatile int16_t vehicle_count=0;
-uint16_t light_state=GO;
-
-int32_t timeout_counter;
+//disabled slaves are not polled to save time
+bool slave_enabled[SLAVE_COUNT]={false,true,false,false,false,false,false,false};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,11 +92,10 @@ static void MX_SPI1_Init(void);
 void StartDefaultTask(void *argument);
 extern void StartGLCDTask(void *argument);
 
-/* USER CODE BEGIN PFP */
 static void ShowLogoScreen();
-static void ShowMainScreen(void);
-static void DrawCount(uint16_t count);
-static void DrawRadarDataWidget(uint16_t x, uint16_t y, uint16_t sensor_id, uint16_t speed, uint8_t dir, uint8_t online);
+
+/* USER CODE BEGIN PFP */
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -150,7 +137,7 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   GFXInit();
-  ST75256BacklightOn();
+  GFXBacklightOn();
   InitConsole();
   //m2m_wifi_init();
 
@@ -496,142 +483,52 @@ static void ShowLogoScreen()
 	HAL_Delay(1000);
 }
 
-static void ShowMainScreen(void)
+static bool PollSlave(uint8_t id, uint8_t *speed1, uint8_t *speed2)
 {
-	uint32_t last_tick;
-	float fps=0;
-	uint16_t radar_enable_swap_counter=16;
-	uint16_t radar_1to4_enabled=1;
+	bool result;
+	uint8_t packet[]={0x00, 0x02+id, 0x06, 'S', 'E', 'N', 'D'};
+	uint8_t received_data[32];
 
-	//Enable1to4();
+	printf("-----Connecting with slave %d ... \r\n ", id);
+	LoRaE32Send(packet, 7);
 
-	while(1)
+	result=LoRaE32WaitforResponse(6, 1000);
+
+	if(result)
 	{
+		printf("Reply received from slave\r\n ");
+		printf("Checking reply ...\r\n ");
 
-		GFXClear();
-		GFXFillRect(0, 0, GFX_SCREEN_WIDTH-1, 14, GFX_COLOR_BLACK);
-		GFXRect(0, 0, GFX_SCREEN_WIDTH-1, GFX_SCREEN_HEIGHT-1, GFX_COLOR_BLACK);
-		GFXSetFont(Arial12);
+		LoRaE32GetResponse(received_data, 6);
+		received_data[3]='\0';
 
-		if(radar_1to4_enabled)
+		if(strcmp((char *)received_data,"RAM")==0)
 		{
-			GFXWriteIntXY(240, 2, 1, 1, GFX_COLOR_WHITE);
+			printf("Reply is OK\r\n ");
+			printf("Connection established\r\n ");
+
+			*speed1=received_data[4];
+			*speed2=received_data[5];
+
+			return true;
 		}
 		else
 		{
-			GFXWriteIntXY(240, 2, 5, 1, GFX_COLOR_WHITE);
+
+			printf("Reply is Invalid\r\n ");
+			printf(received_data);
+
+			return false;
 		}
-
-		if(radar_enable_swap_counter==0)
-		{
-			radar_enable_swap_counter=16;
-
-			if(radar_1to4_enabled)
-			{
-
-				radar_1to4_enabled=false;
-			}
-			else
-			{
-
-				radar_1to4_enabled=true;
-			}
-		}
-
-		radar_enable_swap_counter--;
-
-		//ProcessInputs();
-
-		last_tick=HAL_GetTick();
-
-
-
-		GFXHCenterText(3, "Vehicle Counting (Radar System)", GFX_COLOR_WHITE);
-
-		//Sensor 1-4
-		DrawRadarDataWidget(3,16,1,speed[0],dir[0],(time_stamp[0]+SENSOR_TIMEOUT)>HAL_GetTick());
-		DrawRadarDataWidget(3,16+WIDGET_HEIGHT+2,2,speed[1],dir[1],(time_stamp[1]+SENSOR_TIMEOUT)>HAL_GetTick());
-
-		DrawRadarDataWidget(3+WIDGET_WIDTH+2,16,3,speed[2],dir[2],(time_stamp[2]+SENSOR_TIMEOUT)>HAL_GetTick());
-		DrawRadarDataWidget(3+WIDGET_WIDTH+2,16+WIDGET_HEIGHT+2,4,speed[3],dir[3],(time_stamp[3]+SENSOR_TIMEOUT)>HAL_GetTick());
-
-		//Sensor 5-8
-		DrawRadarDataWidget(3+WIDGET_WIDTH*2+4,16,5,speed[4],dir[4],(time_stamp[4]+SENSOR_TIMEOUT)>HAL_GetTick());
-		DrawRadarDataWidget(3+WIDGET_WIDTH*2+4,16+WIDGET_HEIGHT+2,6,speed[5],dir[5],(time_stamp[5]+SENSOR_TIMEOUT)>HAL_GetTick());
-
-		DrawRadarDataWidget(3+WIDGET_WIDTH*3+6,16,7,speed[6],dir[6],(time_stamp[6]+SENSOR_TIMEOUT)>HAL_GetTick());
-		DrawRadarDataWidget(3+WIDGET_WIDTH*3+6,16+WIDGET_HEIGHT+2,8,speed[7],dir[7],(time_stamp[7]+SENSOR_TIMEOUT)>HAL_GetTick());
-
-
-
-		DrawCount(vehicle_count);
-
-		GFXSetFont(Arial12);
-		fps=1000.0/(HAL_GetTick()-last_tick);
-		//GFXWriteIntXY(2, 2, fps, 3, GFX_COLOR_WHITE);
-		GFXWriteIntXY(2, 2, timeout_counter, 3, GFX_COLOR_WHITE);
-		GFXUpdate();
-	}
-}
-
-static void DrawRadarDataWidget(uint16_t x, uint16_t y, uint16_t sensor_id, uint16_t speed, uint8_t dir, uint8_t online)
-{
-	char buff[32];
-
-	GFXRect(x, y, x+WIDGET_WIDTH, y+WIDGET_HEIGHT, GFX_COLOR_BLACK);
-
-	//Bottom Lable
-	GFXFillRect(x, y+WIDGET_HEIGHT-14, x+WIDGET_WIDTH, y+WIDGET_HEIGHT, GFX_COLOR_BLACK);//background
-	GFXSetFont(Arial12);
-	sprintf(buff,"Sensor %d", sensor_id);
-	GFXWriteStringXY(x+2, y+WIDGET_HEIGHT-12, buff, GFX_COLOR_WHITE);//text
-
-	//Speed
-	if(online)
-	{
-		GFXSetFont(Arial34);
-		GFXWriteIntXY(x+2, y+2, speed, 3, GFX_COLOR_BLACK);
-		GFXSetFont(Arial12);
-
-		/*
-		if(dir==COMING)
-		{
-
-			GFXWriteStringXY(x+4,y+WIDGET_HEIGHT-26,"Coming",GFX_COLOR_BLACK);
-		}
-		else
-		{
-			GFXWriteStringXY(x+4,y+WIDGET_HEIGHT-26,"Going", GFX_COLOR_BLACK);
-		}
-		*/
-
 	}
 	else
 	{
-		GFXWriteStringXY(x+2, y+2, "Error", GFX_COLOR_BLACK);
+		printf("Reply NOT received from slave\r\n ");
+		return false;
 	}
 }
 
-static void DrawCount(uint16_t count)
-{
-	GFXSetFont(Arial12);
-	GFXWriteStringXY(2, 112, "VEHICLE COUNT:", GFX_COLOR_BLACK);
 
-	GFXWriteIntXY(100, 112, count, 2, GFX_COLOR_BLACK);
-
-
-	if(light_state==STOP)
-	{
-		GFXWriteStringXY(184, 112, "STOP", GFX_COLOR_BLACK);
-	}
-	else
-	{
-		GFXWriteStringXY(184, 112, "GO", GFX_COLOR_BLACK);
-	}
-
-	GFXWriteStringXY(128, 112, "SIGNAL:", GFX_COLOR_BLACK);
-
-}
 
 int putchar(int c)
 {
@@ -651,8 +548,6 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	bool result;
-	uint8_t packet[]={0x00, 0x02, 0x06, 'S', 'E', 'N', 'D'};
-	uint8_t received_data[32];
 
 	printf("JAI SHREE RAM !!!\n ");
 	printf("CONFIGURING LORA.\n ");
@@ -670,37 +565,25 @@ void StartDefaultTask(void *argument)
 		printf("SUCCESS\n ");
 	}
 
+	osDelay(1000);
+
+	SetCurrentScreen(SCREEN_MAIN);
+
 	for(;;)
 	{
-		printf("Connecting with slave 1 ... \r\n ");
-		LoRaE32Send(packet, 7);
-
-		result=LoRaE32WaitforResponse(3, 500);
-
-		if(result)
+		for(int i=0;i<SLAVE_COUNT;i++)
 		{
-			printf("Reply received from slave\r\n ");
-			printf("Checking reply ...\r\n ");
-
-			LoRaE32GetResponse(received_data, 3);
-			received_data[4]='\0';
-
-			if(strcmp(received_data,"RAM")==0)
+			if(slave_enabled[i])
 			{
-				printf("Reply is OK\r\n ");
-				printf("Connection established\r\n ");
+				bool conn_state=PollSlave(i, &speed[i*2],&speed[(i*2)+1]);
+				UISetRadarState(i, conn_state);
 			}
 			else
 			{
-
-				printf("Reply is Invalid\r\n ");
-				printf(received_data);
+				UISetRadarState(i, false);
 			}
 		}
-		else
-		{
-			printf("Reply NOT received from slave\r\n ");
-		}
+
 		osDelay(250);
 	}
 

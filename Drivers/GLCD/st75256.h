@@ -22,5 +22,6 @@
 void ST75256Init();
 void ST75256PutPixel(uint16_t x, uint16_t y, uint16_t colour);
 void ST75256Update();
+void ST75256BacklightOn();
 
 #endif /* SRC_ST75256_ST75256_H_ */

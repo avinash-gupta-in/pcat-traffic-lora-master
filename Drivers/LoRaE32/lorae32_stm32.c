@@ -7,13 +7,14 @@
 #include <stm32g0xx_hal.h>
 #include <main.h>
 #include <lorae32_stm32.h>
+#include <cmsis_os2.h>
 #include <FreeRTOS.h>
 #include <queue.h>
 #include <stdbool.h>
 
 extern UART_HandleTypeDef huart3;
                            //{HEAD, ADDH, ADDL,SPEED, CHNL, OPTN 0xC7=MIN PWR, 0xC4=MAX PWR
-uint8_t lora_config_packet[]={0xC0, 0x00, 0x01, 0x1A, 0x06, 0xC7};
+uint8_t lora_config_packet[]={0xC0, 0x00, 0x01, 0x1A, 0x06, 0xC4};
 QueueHandle_t lora_uart_queue;
 uint8_t lora_response[64];
 

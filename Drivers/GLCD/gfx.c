@@ -30,6 +30,11 @@ void GFXRawPutPixel(uint16_t x,uint16_t y,uint8_t color)
 	ST75256PutPixel(x, y, color);
 }
 
+void GFXBacklightOn()
+{
+	ST75256BacklightOn();
+}
+
 void GFXHLine(uint16_t x1,uint16_t y1,uint16_t len,uint8_t color)
 {
 	uint16_t x2=x1+len;

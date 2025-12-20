@@ -8,6 +8,7 @@
 #ifndef LORAE32_LORAE32_STM32_H_
 #define LORAE32_LORAE32_STM32_H_
 
+#include <stdint.h>
 #include <stdbool.h>
 
 // todo remove this
@@ -26,6 +27,7 @@ void LoRaE32Init();
 bool LoRaE32Configure();
 void LoRaE32PushByte(uint8_t byte);
 void LoRaE32Send(const uint8_t *data, uint16_t len);
+bool LoRaE32WaitforResponse(uint16_t response_length, uint16_t timeout);
 void LoRaE32GetResponse(uint8_t *buff, uint16_t len);
 
 #endif /* LORAE32_LORAE32_STM32_H_ */

@@ -11,13 +11,33 @@
 #include "font.h"
 #include "../myconsole_glcd.h"
 
+#include "ui.h"
+
+ScreenType_t g_screen=SCREEN_CONSOLE;
+
 void StartGLCDTask(void *argument)
 {
+	InitMainScreenData();
 	for(;;)
 	{
-		DrawConsole();
+		switch(g_screen)
+		{
+			case SCREEN_CONSOLE:
+				DrawConsole();
+				break;
+
+			case SCREEN_MAIN:
+				DrawMainScreen();
+				break;
+		}
+
+
 		osDelay(250);
 	}
 }
 
+void SetCurrentScreen(ScreenType_t screen)
+{
+	g_screen = screen;
+}
 
