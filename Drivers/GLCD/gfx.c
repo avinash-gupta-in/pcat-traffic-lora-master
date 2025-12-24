@@ -510,3 +510,27 @@ void GFXWriteIntXY(uint8_t x,uint8_t y,int16_t val,int8_t feild_length,uint8_t c
 		x++;
 	}
 }
+
+void GFXDrawImage(uint16_t x,uint16_t y,const uint8_t *img)
+{
+	uint16_t xx,yy;
+	uint16_t h,w;
+
+	w=*img;
+	img++;
+	h=*img;
+	img++;
+
+
+	for(yy=0;yy<h;yy++)
+	{
+		for(xx=0;xx<w;xx++)
+		{
+			if(*(img+((yy/8)*w)+xx) & (1<<(yy%8)))
+				GFXRawPutPixel(x+xx,y+yy,GFX_COLOR_BLACK);
+			else
+				GFXRawPutPixel(x+xx,y+yy,GFX_COLOR_WHITE);
+		}
+
+	}
+}

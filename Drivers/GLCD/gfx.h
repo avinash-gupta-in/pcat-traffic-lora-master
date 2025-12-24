@@ -457,6 +457,8 @@ Return Value
 void GFXWriteIntXY(uint8_t x,uint8_t y,int16_t val,int8_t feild_length,uint8_t color);
 
 void GFXBacklightOn();
+
+void GFXDrawImage(uint16_t x,uint16_t y,const uint8_t *img);
 			
 #endif
 

@@ -31,6 +31,7 @@ volatile int16_t vehicle_count=0;
 volatile uint16_t light_state=GO;
 
 int32_t timeout_counter;
+int16_t counter=0;
 
 static void DrawCount(uint16_t count);
 static void DrawRadarDataWidget(uint16_t x, uint16_t y, uint16_t sensor_id, uint16_t speed1, uint16_t speed2, uint8_t dir, bool online);
@@ -53,13 +54,20 @@ void DrawMainScreen(void)
 	GFXClear();
 	//Title Bar
 	GFXFillRect(0, 0, GFX_SCREEN_WIDTH-1, 14, GFX_COLOR_BLACK);
+	GFXHCenterText(3, "Vehicle Counting (Radar System)", GFX_COLOR_WHITE);
+	GFXWriteIntXY(2, 2, timeout_counter, 3, GFX_COLOR_WHITE);
+	GFXWriteIntXY(220, 2, counter, 3, GFX_COLOR_WHITE);
+	counter++;
+	if(counter==999)
+	{
+		counter=0;
+	}
 
 	//Main Window Border
 	GFXRect(0, 0, GFX_SCREEN_WIDTH-1, GFX_SCREEN_HEIGHT-1, GFX_COLOR_BLACK);
 	GFXSetFont(Arial12);
 
-	//ProcessInputs();
-	GFXHCenterText(3, "Vehicle Counting (Radar System)", GFX_COLOR_WHITE);
+
 
 	//Sensor 1-4
 	DrawRadarDataWidget(3,16,1,speed[0],speed[1],dir[0],slave_conn_status[0]);
@@ -82,7 +90,7 @@ void DrawMainScreen(void)
 	GFXSetFont(Arial12);
 
 	//GFXWriteIntXY(2, 2, fps, 3, GFX_COLOR_WHITE);
-	GFXWriteIntXY(2, 2, timeout_counter, 3, GFX_COLOR_WHITE);
+
 	GFXUpdate();
 }
 

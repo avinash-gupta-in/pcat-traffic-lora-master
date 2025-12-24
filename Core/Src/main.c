@@ -41,6 +41,7 @@
 #include "./Tasks/glcd_task.h"
 #include "Tasks/ui.h"
 #include <ctype.h>
+#include <mono_glcd_240px_bmp.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -80,7 +81,7 @@ const osThreadAttr_t GLCDTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 //disabled slaves are not polled to save time
-bool slave_enabled[SLAVE_COUNT]={false,true,false,false,false,false,false,false};
+bool slave_enabled[SLAVE_COUNT]={true,true,false,false,false,false,false,false};
 uint16_t previous_speed[16];
 /* USER CODE END PV */
 
@@ -476,12 +477,11 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 static void ShowLogoScreen()
 {
-	GFXSetFont(Arial12);
-	GFXHCenterText(64, "JAI SHREE RAM JI !!!", GFX_COLOR_BLACK);
 
+	GFXDrawImage(5, 20, mono_glcd_240px_bmp);
 	GFXUpdate();
 
-	HAL_Delay(1000);
+	HAL_Delay(4000);
 }
 
 static bool PollSlave(uint8_t id, uint8_t *speed1, uint8_t *speed2)
@@ -534,6 +534,7 @@ static bool PollSlave(uint8_t id, uint8_t *speed1, uint8_t *speed2)
 int putchar(int c)
 {
 	ConsolePutChar((char) toupper(c));
+	HAL_UART_Transmit(&huart2, &c, 1, 100);
 }
 
 /* USER CODE END 4 */
