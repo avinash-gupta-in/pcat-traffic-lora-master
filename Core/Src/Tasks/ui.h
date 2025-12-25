@@ -8,6 +8,8 @@
 #ifndef SRC_TASKS_UI_H_
 #define SRC_TASKS_UI_H_
 
+#include <stdbool.h>
+
 //Light states
 #define GO 		1
 #define STOP 	0
@@ -24,6 +26,7 @@ typedef enum ScreenType
 
 void InitMainScreenData();
 void DrawMainScreen(void);
+void UISetRadarState(uint16_t id, bool connected);
 
 
 

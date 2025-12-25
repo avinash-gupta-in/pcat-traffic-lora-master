@@ -4,7 +4,6 @@
 
 uint8_t st75256_display_buffer[ST72256_DISP_WIDTH*ST72256_DISP_HEIGHT/8];
 
-static void __ST75256SendData(uint8_t data);
 static void __ST75256SendCmd(uint8_t cmd);
 static void __ST75256ExtensionCmd(uint8_t extension);
 void __ST75256SendCmdNoCS(uint8_t cmd);
@@ -138,14 +137,6 @@ void __ST75256SendCmdNoCS(uint8_t cmd)
 {
 	__ST75256CmdMode();
 	__ST75256SPIWriteByte(cmd);
-}
-
-void __ST75256SendData(uint8_t data)
-{
-	__ST75256DataMode();
-	__ST75256SelectChip();
-	__ST75256SPIWriteByte(data);
-	__ST75256DeSelectChip();
 }
 
 void __ST75256SendDataNoCS(uint8_t data)

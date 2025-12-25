@@ -60,6 +60,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+IWDG_HandleTypeDef hiwdg;
+
 SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart2;
@@ -91,13 +93,12 @@ static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_IWDG_Init(void);
 void StartDefaultTask(void *argument);
 extern void StartGLCDTask(void *argument);
 
-static void ShowLogoScreen();
-
 /* USER CODE BEGIN PFP */
-
+static void ShowLogoScreen();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -137,6 +138,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART2_UART_Init();
   MX_SPI1_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
   GFXInit();
   GFXBacklightOn();
@@ -226,8 +228,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
@@ -251,6 +254,35 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief IWDG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_IWDG_Init(void)
+{
+
+  /* USER CODE BEGIN IWDG_Init 0 */
+
+  /* USER CODE END IWDG_Init 0 */
+
+  /* USER CODE BEGIN IWDG_Init 1 */
+
+  /* USER CODE END IWDG_Init 1 */
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
+  hiwdg.Init.Window = 4095;
+  hiwdg.Init.Reload = 4095;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN IWDG_Init 2 */
+
+  /* USER CODE END IWDG_Init 2 */
+
 }
 
 /**
@@ -517,7 +549,7 @@ static bool PollSlave(uint8_t id, uint8_t *speed1, uint8_t *speed2)
 		{
 
 			printf("Reply is Invalid\r\n ");
-			printf(received_data);
+			printf((char *)received_data);
 
 			return false;
 		}
@@ -534,7 +566,9 @@ static bool PollSlave(uint8_t id, uint8_t *speed1, uint8_t *speed2)
 int putchar(int c)
 {
 	ConsolePutChar((char) toupper(c));
-	HAL_UART_Transmit(&huart2, &c, 1, 100);
+	HAL_UART_Transmit(&huart2, (uint8_t *)&c, 1, 100);
+
+	return c;
 }
 
 /* USER CODE END 4 */
@@ -582,6 +616,14 @@ void StartDefaultTask(void *argument)
 
 				bool conn_state=PollSlave(i, &speed[i*2],&speed[(i*2)+1]);
 				UISetRadarState(i, conn_state);
+
+				if(!conn_state)
+				{
+					//slave offline
+					continue;
+				}
+
+				HAL_IWDG_Refresh(&hiwdg);
 
 				//compare previous and new speeds
 				//in sensors

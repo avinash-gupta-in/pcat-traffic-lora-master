@@ -100,11 +100,6 @@ bool LoRaE32Configure()
 
 }
 
-static uint32_t __UDataAvailable()
-{
-	return (uxQueueMessagesWaiting(lora_uart_queue));
-}
-
 bool LoRaE32WaitforResponse(uint16_t response_length, uint16_t timeout)
 {
 	BaseType_t result;
